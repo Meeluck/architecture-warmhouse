@@ -1,0 +1,18 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user,"Customer","Пользователь")
+
+System_Boundary(c1,WarmHouse){
+    Container(um,"User Management")
+    Container(dm,"Device Management")
+    Container(sm,"Scenario Management")
+}
+
+
+Boundary(extDev,"External Smart Devices"){
+    System_Ext(heating,"Heating Controller")
+    System_Ext(light,"Light Controller")
+    System_Ext(door,"Door Controller")
+}
+@enduml
