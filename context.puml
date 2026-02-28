@@ -12,7 +12,7 @@ System(wh, "WarmHouse","Управление умным домом")
 
 System_Ext(devices,"Smart Devices","Устройства умного дома")
 
-Rel(wh,devices,"")
+Rel(wh,devices,"df")
 Rel(user,wh,"Управление умным домом посредством нашей системы")
 
 'Rel(dm,devices,"Управление")
