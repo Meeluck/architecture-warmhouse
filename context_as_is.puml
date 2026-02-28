@@ -3,10 +3,15 @@
 
 Person(user,"Customer","Пользователь")
 
-System(wh, "WarmHouse","Система управления отоплением")
+System_Boundary(c1,WarmHouse){
+    System(wh, "WarmHouse","Система управления отоплением")
+    System_Ext(db,"PostgresSql","Хранение")
+}
+
 
 System_Ext(heating,"Heating Controller","Контролле управления отоплением")
 
 Rel(wh,heating,"Отпрапрка команд и запросов к контроллеру")
 Rel(user,wh,"Управление отоплением через UI")
+Rel(wh,db,"Хранение данных")
 @enduml
