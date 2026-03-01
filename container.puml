@@ -23,11 +23,8 @@ System_Boundary(wh,WarmHouse){
     Rel_Down(gw,tm,HTTP)
     Rel_Down(gw,re,HTTP)
 
-'    Rel_R(re,hh,HTTP,Ин-ия о доме)
-'    Rel_R(re,dm,HTTP,Ин-ия об устройствах)
-
     Container(ntf,Notifications,Доставка пользовательских уведомлений)
-    Container(sh,Scheduler,"Сервис выполнение периодических команд")
+    Container(sh,Scheduler,"Сервис выполнение запланированных команд")
 
     Container_Boundary(db,Postrges Instance){
         ContainerDb(ia_db, I&A)
@@ -39,7 +36,7 @@ System_Boundary(wh,WarmHouse){
     ContainerDb(ch_tl, ClickHouse Telemetry)
 
     'Postrges Rels
-    Rel(ia,ia_db,SQL)
+    Rel(ia,ia_db,SQL)ﬁ
     Rel(hh,hh_db,SQL)
     Rel(re,re_db,SQL)
     Rel(dm,dm_db,SQL)
