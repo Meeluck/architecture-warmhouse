@@ -1,0 +1,24 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user,"Customer","Пользователь")
+
+Container(fe,UI,Веб-приложение)
+
+System_Boundary(wh_mon,WarmHouse){
+    Container(ia,Indentity & Accesss, Управление УЗ и доступами)
+    Container(dm,Device Management,Управление утоплением)
+
+    ContainerDb(db,WarmHouseDB, Postgres)
+    Rel(ia,db,Хранение данных о пользователях)
+    Rel(dm,db,Хранение данных о подключенных контроллерах)
+}
+Rel(user,fe, Управление отопление)
+
+Rel(fe,ia,Авторизация)
+Rel(fe,dm,Управление отоплением)
+
+System_Ext(heating,"Heating Controllers","Контроллеры управления отоплением")
+Rel(dm,heating,Отправка команд к контроллеру для управления отоплением)
+
+@enduml
