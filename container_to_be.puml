@@ -3,22 +3,74 @@
 
 Person(user,"Customer","Пользователь")
 
-Container(fe,UI,Веб-приложение)
+Container(webApp,"Web Application","SPA")
 
-System_Boundary(wh_mon,WarmHouse){
-    Container(ia,Indentity & Accesss, Управление УЗ и доступами)
-    Container(dm,Device Management,Управление утоплением)
+System_Boundary(wh,WarmHouse){
+    Container(gw, "API Gateway")
 
-    ContainerDb(db,WarmHouseDB, Postgres)
-    Rel(ia,db,Хранение данных о пользователях)
-    Rel(dm,db,Хранение данных о подключенных контроллерах)
+    ContainerQueue(rm,RabbitMq)
+
+    Container(ia,Identity & Access,Управление пользователями и доступами)
+    Container(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
+    Container(re, Rules Engine,Управление сценариями и их выполнение)
+
+    Container_Boundary(dm,Device Managment,Управление устройствами){
+       Container(do,Device Onboarding,Подключение устройства)
+       Container(dg,Device GateWay,Интеграционный слой управления устройствами)
+       Container(dr,Device Registry,Управление устройствами дома)
+       Rel_Right(dr,do,HTTP,Инициациия регистрации нового устройства)
+       
+       Rel(dr,dg,HTTP,Запросы на выполнение команд связанные с устройствами)
+
+       Rel_Right(do,dg,HTTP,Команды регистрации устройства)
+       Rel_Left(do,dr,HTTP,Сохранение информации о новом устройстве)
+       
+       Container_Boundary(db_dm,Device Managment Postrges Instance){
+            ContainerDb(db_dm_do, Device Onboarding DB)
+            ContainerDb(db_dm_dr, Device Registry DB)
+        }
+        Rel(do,db_dm_do,SQL)
+        Rel(dr,db_dm_dr,SQL)
+    }    
+
+    Rel_Right(gw,ia,HTTP)
+    Rel_Down(gw,dr,HTTP)
+    Rel_Down(gw,tm,HTTP)
+    Rel_Down(gw,re,HTTP)
+
+    Rel_Left(re,dr,HTTP, Исполнение сценариев)
+
+    ContainerDb(ia_db, I&A, Postrges)
+    ContainerDb(re_db, Rules, Postrges)
+
+    ContainerDb(ch_tl, ClickHouse Telemetry)
+
+    Rel(ia,ia_db,SQL)
+    Rel(re,re_db,SQL)
+    Rel(tm,ch_tl,SQL)
+
+    'RabbitMq Rels
+    ' Rel(re,rm,SUB,rules_exec)
+    ' Rel(dm,rm,PUB,device_tl)
+    ' Rel(tm,rm,SUB,device_tl)
+
+    ' Rel(re,sh,HTTP,Комнады запуска сценариев)
+    ' Rel(sh,rm,PUB,rules_exec)
 }
-Rel(user,fe, Управление отопление)
 
-Rel(fe,ia,Авторизация)
-Rel(fe,dm,Управление отоплением)
+Rel(user,webApp,"UI")
+Rel(user,mobApp,"UI")
+Rel(webApp,gw,"HTTP")
+Rel(mobApp,gw,"HTTP")
 
-System_Ext(heating,"Heating Controllers","Контроллеры управления отоплением")
-Rel(dm,heating,Отправка команд к контроллеру для управления отоплением)
+
+System_Ext(extDev,"External Smart Devices"){
+    Container_Ext(heating,"Heating Controller")
+    Container_Ext(light,"Light Controller")
+    Container_Ext(door,"Door Controller")
+    Container_Ext(shd,"Smart Home Devices")
+}
+
+Rel(dg,extDev,В зависимости от требований контроллера)
 
 @enduml
