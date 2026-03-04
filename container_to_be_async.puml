@@ -1,0 +1,81 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user,"Customer","Пользователь")
+
+Container(webApp,"Web Application","SPA")
+
+System_Boundary(wh,WarmHouse){
+    Container(gw, "API Gateway")
+
+    ContainerQueue(queue,Kafka)
+
+    Container(ia,Identity & Access,Управление пользователями и доступами)
+    Container(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
+    Container(re, Rules Engine,Управление сценариями и их выполнение)
+
+    Container_Boundary(dm,Device Managment,Управление устройствами){
+       Container(do,Device Onboarding,Подключение устройства)
+       Container(dg,Device GateWay,Интеграционный слой управления устройствами)
+       Container(dr,Device Registry,Управление устройствами дома)
+        
+        Rel_Up(dr,queue,AMQP,PUB and SUB)
+        Rel_Up(do,queue,AMQP,PUB and SUB)
+        Rel_Up(dg,queue,AMQP,PUB and SUB)
+        
+    '    Инициациия регистрации нового устройства
+    '    Rel_Right(dr,do,HTTP)
+       
+    '  Запросы на выполнение команд связанные с устройствами
+    '    Rel(dr,dg,HTTP)
+
+        ' Команды регистрации устройства
+        ' Rel(do,dg,HTTP)
+        ' Сохранение информации о новом устройстве
+        ' Rel(do,dr,HTTP)
+       
+       Container_Boundary(db_dm,Device Managment Postrges Instance){
+            ContainerDb(db_dm_do, Device Onboarding DB)
+            ContainerDb(db_dm_dr, Device Registry DB)
+        }
+        Rel(do,db_dm_do,SQL)
+        Rel(dr,db_dm_dr,SQL)
+    }    
+
+    Rel_Right(gw,ia,HTTP)
+    Rel_Down(gw,dr,HTTP)
+    Rel_Down(gw,tm,HTTP)
+    Rel_Down(gw,re,HTTP)
+
+
+    ' Rel_Left(re,dr,HTTP, Исполнение сценариев)
+    Rel_Up(re,queue,AMQP,PUB and SUB)
+    Rel_Up(tm,queue,AMQP,SUB)
+    
+
+    ContainerDb(ia_db, I&A, Postrges)
+    ContainerDb(re_db, Rules, Postrges)
+
+    ContainerDb(ch_tl, ClickHouse Telemetry)
+
+    Rel(ia,ia_db,SQL)
+    Rel(re,re_db,SQL)
+    Rel(tm,ch_tl,SQL)
+
+
+}
+
+Rel(user,webApp,"UI")
+Rel(webApp,gw,"HTTP")
+
+
+System_Ext(extDev,"External Smart Devices"){
+    Container_Ext(heating,"Heating Controller")
+    Container_Ext(light,"Light Controller")
+    Container_Ext(door,"Door Controller")
+    Container_Ext(shd,"Smart Home Devices")
+}
+
+Rel(dg,extDev,В зависимости от требований контроллера)
+
+@enduml

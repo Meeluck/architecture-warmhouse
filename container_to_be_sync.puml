@@ -8,7 +8,7 @@ Container(webApp,"Web Application","SPA")
 System_Boundary(wh,WarmHouse){
     Container(gw, "API Gateway")
 
-    ContainerQueue(rm,RabbitMq)
+    ContainerQueue(broker,Kafka)
 
     Container(ia,Identity & Access,Управление пользователями и доступами)
     Container(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
@@ -49,19 +49,12 @@ System_Boundary(wh,WarmHouse){
     Rel(re,re_db,SQL)
     Rel(tm,ch_tl,SQL)
 
-    'RabbitMq Rels
-    ' Rel(re,rm,SUB,rules_exec)
-    ' Rel(dm,rm,PUB,device_tl)
-    ' Rel(tm,rm,SUB,device_tl)
-
-    ' Rel(re,sh,HTTP,Комнады запуска сценариев)
-    ' Rel(sh,rm,PUB,rules_exec)
+    Rel_Up(dg,broker,AMQP,PUB {Telemetry})
+    Rel_Up(tm,broker,AMQP,SUB {Telemetry})
 }
 
 Rel(user,webApp,"UI")
-Rel(user,mobApp,"UI")
 Rel(webApp,gw,"HTTP")
-Rel(mobApp,gw,"HTTP")
 
 
 System_Ext(extDev,"External Smart Devices"){
