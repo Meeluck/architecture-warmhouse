@@ -1,0 +1,49 @@
+@startuml
+title Device Onboarding — Сценарий 1 (MVP): Добавление устройства (интернет уже есть: Ethernet / Wi-Fi настроен заранее)
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Onboarding" as DO
+participant "Device Gateway" as DG
+participant "Device Registry" as DR
+participant "Устройство" as Dev
+
+== Пользователь инициирует добавление ==
+User -> App: Добавить устройство
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+App -> User: Сканировать QR / ввести код привязки
+
+== Устройство уже в интернете и подключается к Gateway ==
+Dev -> DG: Подключиться (TLS)\n(device_id, factory_secret/сертификат)
+DG -> DO: Устройство онлайн и просит режим привязки\n(device_id)
+DO -> DR: Upsert(device_id)\nstatus=Ожидает привязки
+DR --> DO: OK
+
+== Привязка (claim) ==
+App -> GW: POST /onboarding/claim\n{pairing_code} + token
+GW -> IA: Проверить токен, получить user_id
+IA --> GW: OK (user_id)
+
+GW -> DO: Claim(user_id, pairing_code)
+DO -> DO: Проверить код, соответствие device_id\nи что устройство онлайн
+DO -> DR: Bind(device_id, user_id, home_id=default)\nstatus=Привязано
+DR --> DO: OK
+
+== Выдача учётных данных устройству ==
+DO -> IA: Выпустить креды устройства\n(device_id)
+IA --> DO: device_token / сертификат
+
+DO -> DG: Доставить креды устройству\n(device_id, creds)
+DG -> Dev: Передать креды (secure)
+
+Dev -> DG: Переподключиться с новыми кредами
+DG -> DR: UpdatePresence(device_id, Online, last_seen=now)
+DR --> DG: OK
+
+DO --> GW: OK (device_id, status=Online)
+GW --> App: 200 OK
+App --> User: Устройство добавлено и готово
+@enduml

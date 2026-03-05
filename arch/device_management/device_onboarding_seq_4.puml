@@ -1,0 +1,27 @@
+@startuml
+title Device Onboarding — Сценарий 4: Ошибка — устройство уже привязано к другому пользователю
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Onboarding" as DO
+participant "Device Registry" as DR
+
+User -> App: Ввести/сканировать код привязки
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+
+App -> GW: POST /onboarding/claim\n{pairing_code} + token
+GW -> IA: Проверить токен
+IA --> GW: OK
+
+GW -> DO: Claim(user_id, pairing_code)
+DO -> DR: Проверить binding устройства\n(device_id)
+DR --> DO: Уже привязано (owner=other_user)
+
+DO --> GW: Error (already_claimed)
+GW --> App: 409 Conflict
+App --> User: Устройство уже привязано\nНужен сброс/перенос владения
+@enduml

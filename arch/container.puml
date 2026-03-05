@@ -56,7 +56,6 @@ System_Boundary(wh,WarmHouse){
 }
 
 Rel(user,webApp,"UI")
-Rel(user,mobApp,"UI")
 Rel(webApp,gw,"HTTP")
 Rel(mobApp,gw,"HTTP")
 

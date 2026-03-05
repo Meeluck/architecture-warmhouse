@@ -4,6 +4,7 @@
 Person(user,"Customer","Пользователь")
 
 Container(webApp,"Web Application","SPA")
+Container(mobApp,"Mobile Application",Andorid & Ios)
 
 System_Boundary(wh,WarmHouse){
     Container(gw, "API Gateway")
@@ -67,6 +68,9 @@ System_Boundary(wh,WarmHouse){
 
 Rel(user,webApp,"UI")
 Rel(webApp,gw,"HTTP")
+Rel(user,mobApp,"UI")
+Rel(mobApp,gw,"HTTP")
+
 
 
 System_Ext(extDev,"External Smart Devices"){

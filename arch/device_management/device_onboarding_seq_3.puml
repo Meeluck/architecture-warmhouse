@@ -1,0 +1,23 @@
+@startuml
+title Device Onboarding — Сценарий 3: Ошибка — неверный/просроченный код привязки
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Onboarding" as DO
+
+User -> App: Ввести/сканировать код привязки
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+
+App -> GW: POST /onboarding/claim\n{pairing_code} + token
+GW -> IA: Проверить токен
+IA --> GW: OK
+
+GW -> DO: Claim(user_id, pairing_code)
+DO -> DO: Проверить код (срок, подпись, формат)
+DO --> GW: Error (invalid_code / expired_code)
+GW --> App: 400 Bad Request
+App --> User: Код неверный или истёк\nПовторите попытку
+@enduml

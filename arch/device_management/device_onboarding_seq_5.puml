@@ -1,0 +1,32 @@
+@startuml
+title Device Onboarding — Сценарий 5: Устройство оффлайн во время привязки (ожидание)
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Onboarding" as DO
+participant "Device Registry" as DR
+
+User -> App: Ввести/сканировать код привязки
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+
+App -> GW: POST /onboarding/claim\n{pairing_code} + token
+GW -> IA: Проверить токен
+IA --> GW: OK
+
+GW -> DO: Claim(user_id, pairing_code)
+DO -> DO: Проверить, что устройство онлайн\n(есть активная сессия через Gateway)
+alt Устройство оффлайн
+  DO -> DR: Upsert(device_id)\nstatus=Ожидает подключения
+  DR --> DO: OK
+  DO --> GW: 202 Accepted\nstatus=PendingDeviceOnline
+  GW --> App: 202 Accepted
+  App --> User: Включите устройство и проверьте интернет\nПривязка завершится после подключения
+else Устройство онлайн
+  DO --> GW: OK
+  GW --> App: 200 OK
+  App --> User: Устройство добавлено
+end
+@enduml

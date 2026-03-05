@@ -1,0 +1,18 @@
+@startuml
+title Device Gateway — Сценарий 4: Маршрутизация по device_id (и "дому по умолчанию" через Registry)
+
+participant "Устройство" as Dev
+participant "Device Gateway" as GW
+participant "Device Registry" as DR
+participant "Telemetry" as TLM
+
+Dev -> GW: Event/Telemetry\n(device_id, payload)
+
+GW -> GW: Извлечь device_id из сообщения\nи проверить аутентификацию
+GW -> DR: GetBinding(device_id)\n(owner_id, home_id, status)
+DR --> GW: Binding(owner_id, home_id)
+
+GW -> GW: Добавить контекст маршрутизации\n(owner_id, home_id)
+GW -> TLM: Ingest(event + owner_id + home_id)
+TLM --> GW: OK
+@enduml

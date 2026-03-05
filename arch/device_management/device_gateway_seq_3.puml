@@ -1,0 +1,40 @@
+@startuml
+title Device Gateway — Сценарий 3: Управление соединением (keepalive, переподключение, backoff)
+
+participant "Устройство" as Dev
+participant "Device Gateway" as GW
+participant "Device Registry" as DR
+
+== Первичное подключение ==
+Dev -> GW: Connect (TLS)\n(device_id, creds)
+GW -> GW: Проверить креды
+GW -> DR: UpdatePresence(device_id, Online, last_seen=now)
+DR --> GW: OK
+GW --> Dev: Connected
+
+== Keepalive ==
+loop Каждые N секунд
+  Dev -> GW: Ping / Heartbeat
+  GW -> DR: UpdateLastSeen(device_id, now)
+  DR --> GW: OK
+  GW --> Dev: Pong
+end
+
+== Обрыв связи ==
+alt Соединение закрыто корректно
+  Dev -> GW: Disconnect
+  GW -> DR: UpdatePresence(device_id, Offline, last_seen=now)
+  DR --> GW: OK
+else Таймаут / пропали heartbeat
+  GW -> GW: Detect timeout
+  GW -> DR: UpdatePresence(device_id, Offline, last_seen=now)
+  DR --> GW: OK
+end
+
+== Переподключение ==
+Dev -> Dev: Backoff (1s, 2s, 4s, ...)
+Dev -> GW: Reconnect (TLS)
+GW -> DR: UpdatePresence(device_id, Online, last_seen=now)
+DR --> GW: OK
+GW --> Dev: Connected
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+
+title Device Registry — Сценарий 1: Получение списка устройств пользователя (панель дома)
+
+actor Пользователь as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Registry" as DR
+
+User -> App: Открыть "Мой дом" / "Устройства"
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+
+App -> GW: GET /devices (Authorization: Bearer token)
+GW -> IA: Проверить токен и права (user_id)
+IA --> GW: OK (user_id)
+
+GW -> DR: ListDevices(user_id)
+DR --> GW: devices[]\n(device_id, тип, имя, статус, last_seen, теги)
+GW --> App: 200 OK + devices[]
+App --> User: Показать список устройств
+
+@enduml

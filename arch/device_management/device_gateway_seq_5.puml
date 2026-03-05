@@ -1,0 +1,21 @@
+@startuml
+title Device Gateway — Сценарий 5: Подключение нового протокола/вендора через адаптер (расширяемость)
+
+participant "Устройство партнёра" as PDev
+participant "Адаптер протокола X" as Adapter
+participant "Device Gateway" as GW
+participant "Telemetry" as TLM
+participant "Commands" as CMD
+
+== Входящие события ==
+PDev -> Adapter: Событие в протоколе X
+Adapter -> Adapter: Декодировать + нормализовать
+Adapter -> GW: PublishNormalizedEvent(event)
+GW -> TLM: Ingest(event)
+
+== Исходящие команды ==
+CMD -> GW: SendCommand(device_id, action, params)
+GW -> Adapter: SendNormalizedCommand(command)
+Adapter -> Adapter: Кодировать в протокол X
+Adapter -> PDev: Команда в протоколе X
+@enduml
