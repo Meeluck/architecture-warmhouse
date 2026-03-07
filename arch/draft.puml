@@ -1,0 +1,44 @@
+@startuml
+title Device Onboarding — диаграмма компонентов
+
+skinparam componentStyle rectangle
+skinparam wrapWidth 200
+skinparam maxMessageSize 200
+
+package "Клиентские и внешние системы" {
+  [API Gateway] as APIGW
+  [Identity & Access] as IA
+  [Device Gateway] as GW
+  [Device Registry] as DR
+}
+
+package "Device Onboarding" {
+  component "Onboarding API" as API
+  component "Pairing / Claim Manager" as Claim
+  component "Device Provisioning Manager" as Provisioning
+  component "Ownership Transfer / Reset Manager" as Transfer
+  component "Onboarding State Manager" as State
+  database "Onboarding Store" as Store
+}
+
+APIGW --> API : запросы на подключение,\nпривязку, перенос, сброс
+
+API --> Claim : проверка pairing code\nи подтверждение владения
+API --> Transfer : перенос / перепривязка
+API --> State : получить / обновить\nсостояние onboarding
+
+GW --> State : устройство вышло в сеть\nи готово к привязке
+GW --> Claim : подтверждение,\nчто устройство доступно
+
+Claim --> Store : чтение pairing code,\nстатуса и истории
+State --> Store : хранение состояния onboarding
+Transfer --> Store : хранение операций\nпереноса и сброса
+
+Claim --> Provisioning : запрос на выпуск\nучётных данных устройства
+Provisioning --> IA : выпуск / отзыв токена,\nключа или сертификата
+IA --> Provisioning : credentials / статус отзыва
+
+Claim --> DR : создать или обновить\nзапись устройства
+Transfer --> DR : изменить владельца\nили статус привязки
+
+@enduml

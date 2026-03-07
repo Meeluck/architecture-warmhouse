@@ -1,0 +1,39 @@
+ @startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title API Gateway - диаграмма компонента 
+
+Container_Ext(webApp,"Web Application","SPA")
+Container_Ext(mobApp,"Mobile Application",Android & iOS)
+
+Container_Boundary(gw, API Gateway){
+    Component(router, "API Router", ,"Принимает HTTP-запросы от Web и Mobile клиентов, определяет целевой маршрут и передаёт запрос на дальнейшую обработку")
+    Component(middleware, "Auth Middleware", ,"Проверяет наличие и валидность токена в HTTP-запросе, взаимодействует с Identity & Access для валидации токена")
+    Component(policy, "Access Policy Checker", ,"Проверяет, имеет ли пользователь право на вызов запрошенного метода или маршрута, и отклоняет недопустимые запросы до передачи в backend-сервисы.")
+    Component(proxy, "Service Proxy", ,"Проксирует запрос в целевой микросервис, получает ответ и возвращает его клиентскому приложению.")
+
+    Rel(router,middleware,"проверка токена")
+    Rel(router,policy,"проверка доступа")
+    Rel(router,proxy,"проксирование запроса")
+    Rel(proxy,router,"возврат ответа")
+}
+
+Rel(webApp, router, "HTTP requests")
+Rel(mobApp, router, "HTTP requests")
+
+Container_Ext(ia,Identity & Access,Управление пользователями и доступами)
+Container_Ext(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
+Container_Ext(re, Rules Engine,Управление сценариями и их выполнение)
+Container_Ext(do,Device Onboarding,Подключение устройства)
+Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
+Container_Ext(dr,Device Registry,Управление устройствами дома)
+
+Rel(middleware,ia,"валидация токена")
+Rel(policy,ia,"получение claims / ролей")
+Rel(proxy,do,"запросы onboarding")
+Rel(proxy,dr,"запросы устройств")
+Rel(proxy,tm,"запросы телеметрии")
+Rel(proxy,re,"запросы сценариев")
+ 
+@enduml

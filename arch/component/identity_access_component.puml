@@ -1,0 +1,44 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Identity & Access — диаграмма компонентов
+
+Container_Ext(webApp,"Web Application","SPA")
+Container_Ext(mobApp,"Mobile Application",Android & iOS)
+
+Container_Boundary(ia, Identity & Access){
+    Component(auth, "Authentication", ,"Обрабатывает вход в систему, проверяет учётные данные и выдаёт токены")
+    Component(umgmt, "User Management", ,"Управляет учётными записями пользователей")
+    Component(tokenMgr, "Session & Token Manager", ,"Управляет сессиями пользователей и выдаёт access / refresh токены")
+    Component(authorizer, "Authorization", ,"Проверяет права доступа пользователя на основе ролей и claims")
+    Component(deviceCreds, "Device Credentials Manager", ,"Управляет учётными данными устройств, выдаёт и отзывает credentials для устройств")
+}
+ContainerDb(ia_db, I&A, Postrges,"Хранит информацию о пользователях, устройствах, сессиях и токенах")
+
+Container_Ext(gw, API GateWay)
+Container_Ext(do,Device Onboarding,Подключение устройства)
+Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
+
+Rel(webApp,auth,"вход в систему")
+Rel(mobApp,auth,"вход в систему")
+
+Rel(auth,ia_db,"проверка учётных данных")
+Rel(auth,tokenMgr,"создать выпустить токены")
+
+
+Rel(webApp,umgmt,"регистрация / управление профилем")
+Rel(mobApp,umgmt,"регистрация / управление профилем")
+Rel(umgmt,ia_db,"хранение пользователей")
+
+Rel(gw,tokenMgr,"валидация access token")
+Rel(gw,authorizer,"проверка ролей / claims")
+Rel(authorizer,ia_db,"чтение ролей и прав")
+
+Rel_Right(do,deviceCreds,"выпуск credentials для устройства")
+Rel_Down(dg,deviceCreds,"валидация token / сертификата устройства")
+Rel(deviceCreds,ia_db,"хранение / отзыв device credentials")
+
+Rel(tokenMgr,ia_db,"хранение сессий и токенов")
+
+@enduml

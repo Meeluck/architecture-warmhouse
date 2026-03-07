@@ -1,0 +1,58 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Device GateWay — диаграмма компонентов
+
+' Container_Ext(gw, API GateWay)
+Container_Ext(ia,Identity & Access,Управление пользователями и доступами)
+Container_Ext(dr,Device Registry,Управление устройствами дома)
+Container_Ext(do,Device Onboarding,Подключение устройства)
+' Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
+Container_Ext(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
+Container_Ext(re, Rules Engine,Управление сценариями и их выполнение)
+
+ContainerDb(db_dm_dg, Device GateWay DB,"Хранит информацию об активных соединениях, сессиях устройств и техническом состоянии каналов связи")
+
+Container_Boundary(re, Device GateWay){    
+   Container(router, Message Router,,"Принимает и маршрутизирует входящие сообщения от устройств и исходящие команды от внутренних сервисов платформы")
+
+   Container(adapter,Protocol Adapter,,"Реализует поддержку используемых протоколов и каналов взаимодействия с устройствами, преобразует внешние сообщения устройств во внутренний формат платформы и обратно")
+   
+   Container(manager, Connection Manager,,"Управляет соединениями с устройствами: подключение, отключение, keepalive, переподключение, контроль доступности канала ")
+   
+   Container(dispatcher, Command Dispatcher,,"Получает команды от внутренних сервисов и доставляет их на целевое устройство через активное соединение и нужный протокол")
+   
+   Container(normalizer,Event Normalizer,,"Преобразует телеметрию, статусы и события устройств в единый внутренний формат для дальнейшей обработки платформой")
+}
+
+System_Ext(extDev,"External Smart Devices"){
+    Container_Ext(heating,"Heating Controller")
+    Container_Ext(light,"Light Controller")
+    Container_Ext(door,"Door Controller")
+    Container_Ext(shd,"Smart Home Devices")
+}
+
+
+Rel(extDev,adapter,"подключение, телеметрия, события")
+Rel(adapter,router,"сообщения устройства во внутреннем формате")
+Rel(router,manager,"управление соединением")
+Rel(manager,db_dm_dg,"хранение сессий, состояния канала")
+
+Rel(router,normalizer,"нормализация событий и телеметрии")
+Rel(normalizer,tm,"передача событий и измерений")
+
+' Rel(dr,dispatcher,"команда на устройство")
+
+Rel(re,dispatcher,"команда сценария")
+Rel(dispatcher,manager,"получить активное соединение")
+Rel(dispatcher,adapter,"отправить команду в протоколе устройства")
+
+Rel(adapter,extDev,"команды устройству")
+
+Rel(router,ia,"проверка токена / сертификата устройства")
+Rel(do,router,"доставка новых учётных данных устройству")
+
+Rel(manager,dr,"обновить online/offline/last_seen")
+
+
+@enduml
