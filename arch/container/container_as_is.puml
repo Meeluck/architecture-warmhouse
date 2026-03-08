@@ -1,6 +1,8 @@
 @startuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 
+Title Container AS-IS Diagram for WarmHouse System
+
 Person(user,"Customer","Пользователь")
 
 Container(fe,UI,Веб-приложение)

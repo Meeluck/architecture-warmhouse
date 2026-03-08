@@ -98,9 +98,13 @@
 
 ### 5. Визуализация контекста системы — диаграмма С4
 
-// TODO Заменить диаграмму
+**AS-IS**
 
-![Container diagram WarhmHouse](https://www.plantuml.com/plantuml/svg/bP7FgzD04CVl-IlMFUL1NeFWoTF38Zn1eVXuU2pviJI1pMxTtV1QHEWFn8E2Tm-AYFSYBItMfl_2x7_aJ6ChL2-6iDcTcU_dExEviYunhgvaSAzKcQnpmGhdXlPX79lahZCeNL6djHKcqye9vJgPhkAXJ1HfBgtBPPd6tGUNFGhTFdiQLubrmc2etoN5o7M6H0zwmbYjGa95l5jRfojXUCJXCpImzUzXZT_liF0pMD6PNmJ1pHXPLV-HhbMUc76OtOzU9AQwraYvU1KmVDgIyAw863_b2Fi5DdvwWFs41VDpsFi9BD1XYw4T9ZymQ33VmFuOebgq_OFjFnwvC4yZtjFM3OomDoybiRyTKBkZ2ZMlWrEtf2b4uaerYFXrks5q5qPBsOxy4LrtVeOK79tS_wk_uBcGDF3913vXNIkdzGVEYqj3WwDioM33ODqc4JcbUyO2VC_Ry1C_HmFaj_y9JJXyFUyCLl_iZFctHC3jcjq--Or1Gfx-VMCCbdH4ztV-3PPU2PNNbVm5)
+![AS-IS](out/arch/context/context_as_is/context_as_is.svg)
+
+**TO-BE**
+
+![TO-BE](out/arch/context/context_to_be/context_to_be.svg)
 
 # Задание 2. Проектирование микросервисной архитектуры
 
@@ -108,43 +112,35 @@
 
 ### 2. Целевая экосистема, которую необходимо создать
 
-- Экосистема доступна пользователю в режиме самообслуживания по модели SaaS.
-- Позволяет управлять отоплением, включать и выключать свет, запирать и отпирать автоматические ворота, удалённо наблюдать за домом, возможно и будущее неуточнённое поведение.
-- Пользователь самостоятельно выбирает необходимые ему модули умного дома (устройства), сам их подключает, настраивает сценарии работы и просматривает телеметрию.
--Компания не занимается производством устройств, но поддерживает подключение к экосистеме устройств партнеров по стандартным протоколам.
-
-**Требования:**
-
-- Модуль управления приборами (Контроллер для дома) и сами приборы(устройства) должны быть максимально готовы к использованию и продаваться в отдельных комплектах для удобной покупки и подключения.
-- Устройства должны быть доступны через интернет (для удалённого наблюдения и доступа). Предполагается, что пользователь будет иметь интернет-канал, к которому их можно подключить.
-- Покупатели могут программировать систему для управления различными модулями в соответствии со своими потребностями.
-
-### Цели бизнеса
-
-- Описана As-Is и To-Be архитектура решения. Создан план по переходу к целевой системе.
-- **Разработан MVP с разделёнными микросервисами для управления отоплением, освещением, наблюдением, воротами**. Продуман вариант подключения еще неизвестных датчиков.
-
 **Диаграмма контейнеров (Containers)**
 
-Добавьте диаграмму.
+![AS-IS](out/arch/container/container_as_is/container_as_is.svg)
+
+![TO-BE](out/arch/container/container_to_be/container_to_be.svg)
 
 **Диаграмма компонентов (Components)**
 
-Добавьте диаграмму для каждого из выделенных микросервисов.
+**API Gateway** -  единая точка входа для Web/Mobile: маршрутизирует запросы в нужные backend-сервисы и выполняет базовые проверки безопасности (валидация токена/сессии, первичная авторизация)
+![api-gateway](out/arch/component/api_gateway_component/api_gateway_component.svg)
 
-**API Gateway** -
 
-**Identity & Access** -
+**Identity & Access** - регистрация/вход, управление сессиями и токенами, ролевая модель доступа и авторизация действий.
+![ia](out/arch/component/identity_access_component/identity_access_component.svg)
 
-**Device Registry** —
+**Device Registry** — реестр устройств дома: метаданные устройства (имя, комната, тип),статус доступности (online/offline/last seen), группировка/теги.
+![dr](out/arch/component/device_registry_component/device_registry_component.svg)
 
-**Device Onboarding** — 
+**Device Onboarding** — подключение устройств: подтверждение владения, выдача учётных данных устройству (ключи/токены),перенос/сброс.
+![do](out/arch/component/device_onboarding_component/device_onboarding_component.svg)
 
-**Device Gateway** —
+**Device Gateway** — интеграционный слой для устройств:поддержка протоколов/каналов, управление соединениями, нормализация команд и событий в единый внутренний формат.
+![dg](out/arch/component/device_gateway_component/device_gateway_component.svg)
 
-**Telemetry** — 
+**Telemetry** -  приём и хранение телеметрии и событий от устройств (измерения, состояния, события камер/ворот), предоставление “последних значений” и истории (time-series) для UI и сценариев.
+![tm](out/arch/component/telemetry_component/telemetry_component.svg)
 
-**Rules Engine** -
+**Rules Engine** — управление сценариями и их выполнение: конструктор правил (триггеры/условия/действия, версии, тест) и исполнитель (планирование, дедупликация, ретраи, журнал выполнения).
+![re](out/arch/component/rules_component/rules_component.svg)
 
 **Диаграмма кода (Code)**
 
