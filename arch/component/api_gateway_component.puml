@@ -26,7 +26,6 @@ Container_Ext(ia,Identity & Access,Управление пользователя
 Container_Ext(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
 Container_Ext(re, Rules Engine,Управление сценариями и их выполнение)
 Container_Ext(do,Device Onboarding,Подключение устройства)
-Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
 Container_Ext(dr,Device Registry,Управление устройствами дома)
 
 Rel(middleware,ia,"валидация токена")

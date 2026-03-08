@@ -5,29 +5,17 @@
 title  Telemetry — диаграмма компонентов
 
 Container_Ext(gw, API GateWay)
-' Container_Ext(ia,Identity & Access,Управление пользователями и доступами)
 Container_Ext(dr,Device Registry,Управление устройствами дома)
 Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
-
-' Container_Ext(do,Device Onboarding,Подключение устройства)
-' Container_Ext(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
-Container_Ext(re, Rules Engine,Управление сценариями и их выполнение)
-
 
 ContainerDb(tm_st, Telemetry Store,,"Хранит time-series данные и события устройств")
 
 Container_Boundary(tm, Telemetry){    
-
     Component(api, Telemetry API,," Принимает запросы на получение текущих значений, истории измерений и списка событий устройств") 
-
     Component(ingestion, Telemetry Ingestion,," Принимает нормализованные измерения, статусы и события от Device Gateway и передаёт их на сохранение")
-
     Component(state, Latest State Manager,,"Поддерживает актуальное “последнее состояние” устройства или его параметра, чтобы UI мог быстро показать текущее значение без чтения всей истории")
-
     Component(writer, Telemetry Store Writer,,"Сохраняет события устройств и измерения в историческое хранилище")
-
     Component(query, Telemetry Query Service,,"Предоставляет данные для чтения: последние значения, историю по диапазону времени, фильтрацию по типу устройства или типу события")
-    
 }
 
 Rel(dg,ingestion,"измерения, статусы, события")
@@ -42,10 +30,6 @@ Rel(gw,api,"запросы UI на получение текущих данны�
 Rel(api,query,"получить последние значения, историю, события")
 Rel(query,tm_st,"чтение телеметрии и истории")
 Rel(query,dr,"получить метаданные устройства при необходимости")
-
-Rel(re,query,"запрос истории, последних значений")
-Rel(re,api,"запрос данных для сценариев")
-
 
 
 @enduml

@@ -8,10 +8,6 @@ Container_Ext(ia,Identity & Access,Управление пользователя
 Container_Ext(dr,Device Registry,Управление устройствами дома)
 Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
 
-' Container_Ext(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
-' Container_Ext(re, Rules Engine,Управление сценариями и их выполнение)
-' Container_Ext(do,Device Onboarding,Подключение устройства)
-
 ContainerDb(db_dm_do, Device Onboarding DB,"Хранит временные данные onboarding-процесса: pairing code, статус привязки, промежуточное состояние и историю операций подключения.")
 
 Container_Boundary(do, Device Onboarding){    

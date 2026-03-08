@@ -1,0 +1,79 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user,"Customer","Пользователь")
+
+Container(webApp,"Web Application","SPA")
+Container(mobApp,"Mobile Application",Andorid & Ios)
+
+
+System_Boundary(wh,WarmHouse){
+    Container(gw, "API Gateway")
+
+    ContainerQueue(broker,Kafka, "","- Telemetry\n- DeviceEvents \n- DeviceCommands")
+
+    Container(ia,Identity & Access,Управление пользователями и доступами)
+    ContainerDb(ia_db, I&A Store, PostrgeSQL)
+    Rel(ia,ia_db,SQL)
+
+    Container(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
+    ContainerDb(ch_tl, Telemetry Store, ClickHouse)
+    Rel(tm,ch_tl,SQL)
+    
+    Container(re, Rules Engine,Управление сценариями и их выполнение)
+    ContainerDb(re_db, Rules Engine Store, PostrgeSQL)
+    Rel(re,re_db,SQL)
+    
+    Container_Boundary(dm,Device Management,Управление устройствами){
+       Container(do,Device Onboarding,Подключение устройства)
+       Container(dg,Device GateWay,Интеграционный слой управления устройствами)
+       Container(dr,Device Registry,Управление устройствами дома)
+       
+       BiRel(do,dr,HTTP,Сохранение нового устройства)       
+       BiRel(do,dg,HTTP,Регистрации устройства)
+       
+        ContainerDb(db_dm_do, Device Onboarding Store)
+        ContainerDb(db_dm_dr, Device Registry Store)
+        Rel(do,db_dm_do,SQL)
+        Rel(dr,db_dm_dr,SQL)
+    }    
+    
+    Rel(gw,ia,HTTP,Проверка доступов)
+    Rel(gw,dr,HTTP,Работа с устройствами)
+    Rel(gw,tm,HTTP,Получение телеметрии)
+    Rel(gw,re,HTTP,Управление сценариями)
+    Rel(gw,do,HTTP,Подключение устройства)
+
+    
+    Rel(dg,ia,HTTP,Валидация токена устройства)
+    BiRel(do,ia,HTTP,Управление токенами устройств)
+    
+    Rel(re,dr,HTTP, Получение данных о устройствах)
+
+    Rel(dg,broker,"PUB {Telemetry, DeviceEvents}")
+    Rel(dg,broker,SUB {DeviceCommands})
+
+    Rel(tm,broker,SUB {Telemetry})
+
+    Rel(dr,broker,SUB {DeviceEvents})
+    Rel(dr,broker,PUB {DeviceCommands})
+    Rel(re,broker,PUB {DeviceCommands})
+}
+
+Rel(user,webApp,"UI")
+Rel(webApp,gw,"HTTP")
+Rel(user,mobApp,"UI")
+Rel(mobApp,gw,"HTTP")
+
+
+System_Ext(extDev,"External Smart Devices"){
+    Container_Ext(heating,"Heating Controller")
+    Container_Ext(light,"Light Controller")
+    Container_Ext(door,"Door Controller")
+    Container_Ext(shd,"Smart Home Devices")
+}
+
+Rel(dg,extDev,Команды управления)
+Rel(extDev,dg,Отправка телеметрии)
+
+@enduml
