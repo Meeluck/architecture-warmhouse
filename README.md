@@ -144,7 +144,13 @@
 
 **Диаграмма кода (Code)**
 
-Добавьте одну диаграмму или несколько.
+![re_create_pub_rule_seq](out/arch/code/create_and_pub_rule_seq/create_and_pub_rule_seq.svg)
+
+![re_create_pub_rule](out/arch/code/create_and_pub_rule_code/create_and_pub_rule_code.svg)
+
+![re_run_rule_seq](out/arch/code/create_and_pub_rule_seq/create_and_pub_rule_seq.svg)
+
+![re_run_rule](out/arch/code/run_rule_code/run_rule_code.svg)
 
 # Задание 3. Разработка ER-диаграммы
 

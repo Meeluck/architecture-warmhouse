@@ -1,0 +1,57 @@
+@startuml
+title Rules Engine — запуск сценария по расписанию
+
+participant "Execution Scheduler" as Scheduler
+database "RuleRepository" as RuleRepo
+database "RuleVersionRepository" as VersionRepo
+database "ExecutionJobRepository" as JobRepo
+participant "Action Executor" as Executor
+participant "Device Command Port" as CommandPort
+participant "Device Gateway" as DGW
+participant "Execution Log" as ExecLog
+database "ExecutionLogRepository" as LogRepo
+
+== Планирование ==
+Scheduler -> RuleRepo: findActive()
+RuleRepo --> Scheduler: activeRules[]
+
+loop для каждого активного правила
+  Scheduler -> VersionRepo: findPublished(ruleId)
+  VersionRepo --> Scheduler: RuleVersion
+
+  Scheduler -> Scheduler: проверить,\nнужно ли выполнить сейчас
+  alt Время выполнения наступило
+    Scheduler -> JobRepo: save(ExecutionJob)\nstatus=Planned
+    JobRepo --> Scheduler: ExecutionJob
+  end
+end
+
+== Исполнение ==
+Scheduler -> JobRepo: findPlannedBefore(now)
+JobRepo --> Scheduler: plannedJobs[]
+
+loop для каждого job
+  Scheduler -> Executor: execute(job)
+
+  Executor -> JobRepo: update(job)\nstatus=Running
+
+  Executor -> VersionRepo: findByRuleAndVersion(ruleId, version)
+  VersionRepo --> Executor: RuleVersion
+
+  Executor -> CommandPort: sendCommand(deviceId,\ncommand, params)
+  CommandPort -> DGW: отправить команду устройству
+  DGW --> CommandPort: result(success / error)
+  CommandPort --> Executor: CommandResult
+
+  alt Команда выполнена успешно
+    Executor -> JobRepo: update(job)\nstatus=Succeeded
+    Executor -> ExecLog: writeSuccess(job)
+    ExecLog -> LogRepo: save(ExecutionLogEntry)\nstatus=Success
+  else Ошибка выполнения
+    Executor -> JobRepo: update(job)\nstatus=Failed
+    Executor -> ExecLog: writeError(job, error)
+    ExecLog -> LogRepo: save(ExecutionLogEntry)\nstatus=Error
+  end
+end
+
+@enduml

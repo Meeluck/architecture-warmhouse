@@ -1,0 +1,153 @@
+@startuml
+title Rules Engine — диаграмма кода: формирование сценария
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 80
+
+top to bottom direction
+
+package "Application Services" {
+  class RuleDesignerService {
+    +createDraft(...)
+    +updateDraft(...)
+    +getDraft(...)
+  }
+
+  class RuleValidator {
+    +validateDraft(...)
+    +validateAction(...)
+    +validateSchedule(...)
+  }
+
+  class VersionManager {
+    +publishDraft(...)
+    +getPublished(...)
+  }
+
+  class RuleManager {
+    +registerRule(...)
+    +activateRule(...)
+    +disableRule(...)
+  }
+}
+
+package "Domain Model" {
+  class RuleDraft {
+    +id: UUID
+    +name: string
+    +targetDeviceId: UUID
+    +schedule: CronExpression
+    +status: DraftStatus
+  }
+
+  class RuleAction {
+    +type: ActionType
+    +command: string
+    +params: map
+  }
+
+  class RuleVersion {
+    +id: UUID
+    +ruleId: UUID
+    +version: int
+    +schedule: CronExpression
+    +definitionJson: string
+    +publishedAt: datetime
+    +isPublished: bool
+  }
+
+  class Rule {
+    +id: UUID
+    +name: string
+    +targetDeviceId: UUID
+    +status: RuleStatus
+    +currentVersion: int
+    +activate(version: int)
+    +disable()
+  }
+
+  class CronExpression
+}
+
+package "Ports & Repositories" {
+  interface RuleDraftRepository {
+    +save(...)
+    +findById(...)
+  }
+
+  interface RuleVersionRepository {
+    +save(...)
+    +findPublished(...)
+  }
+
+  interface RuleRepository {
+    +save(...)
+    +findById(...)
+  }
+
+  interface DeviceCatalogPort {
+    +checkDeviceExists(...)
+    +checkActionAllowed(...)
+  }
+}
+
+enum DraftStatus {
+  Draft
+  ReadyForPublish
+}
+
+enum RuleStatus {
+  Active
+  Disabled
+}
+
+enum ActionType {
+  DeviceCommand
+  Notification
+}
+
+RuleDraft *-- RuleAction
+RuleDraft --> CronExpression
+Rule o-- RuleVersion
+RuleVersion --> CronExpression
+
+RuleDesignerService ..> RuleDraftRepository
+RuleDesignerService ..> RuleDraft
+
+RuleValidator ..> DeviceCatalogPort
+RuleValidator ..> RuleDraft
+
+VersionManager ..> RuleDraftRepository
+VersionManager ..> RuleValidator
+VersionManager ..> RuleVersionRepository
+VersionManager ..> RuleDraft
+VersionManager ..> RuleVersion
+
+RuleManager ..> RuleRepository
+RuleManager ..> RuleVersionRepository
+RuleManager ..> Rule
+RuleManager ..> RuleVersion
+
+note right of RuleDesignerService
+Создание и изменение
+черновика сценария
+end note
+
+note right of RuleValidator
+Проверка расписания,
+цели и допустимости действия
+end note
+
+note right of VersionManager
+Публикация черновика
+в версию сценария
+end note
+
+note right of RuleManager
+Регистрация и активация
+правила для исполнения
+end note
+
+@enduml
