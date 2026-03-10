@@ -28,12 +28,6 @@ channels:
       deviceEventReceived:
         $ref: '#/components/messages/DeviceEventReceived'
 
-  ruleExecutionCompleted:
-    address: rules.execution.completed
-    messages:
-      ruleExecutionCompleted:
-        $ref: '#/components/messages/RuleExecutionCompleted'
-
 operations:
   publishDeviceTelemetry:
     action: send
@@ -70,15 +64,6 @@ operations:
       $ref: '#/channels/deviceEventsReceived'
     messages:
       - $ref: '#/channels/deviceEventsReceived/messages/deviceEventReceived'
-
-  publishRuleExecutionCompleted:
-    action: send
-    title: Публикация результата выполнения сценария
-    summary: Rules Engine публикует результат выполнения сценария
-    channel:
-      $ref: '#/channels/ruleExecutionCompleted'
-    messages:
-      - $ref: '#/channels/ruleExecutionCompleted/messages/ruleExecutionCompleted'
 
 components:
   messages:
@@ -121,21 +106,7 @@ components:
               source: "remote_control"
             createdAt: "2026-03-09T18:15:00Z"
 
-    RuleExecutionCompleted:
-      name: RuleExecutionCompleted
-      title: Rule execution completed
-      summary: Сообщение о результате выполнения сценария
-      contentType: application/json
-      payload:
-        $ref: '#/components/schemas/RuleExecutionCompletedPayload'
-      examples:
-        - name: success
-          summary: Сценарий выполнен успешно
-          payload:
-            executionId: "9c4d3cf3-9fb1-4f7e-a5f9-ef6c7b8d0003"
-            ruleId: "2d4be9b5-2261-4fc2-8da7-f6d6d9e10003"
-            status: "SUCCESS"
-            finishedAt: "2026-03-09T07:00:02Z"
+
 
   schemas:
     TelemetryReceivedPayload:
@@ -201,26 +172,5 @@ components:
           type: object
           additionalProperties: true
         createdAt:
-          type: string
-          format: date-time
-
-    RuleExecutionCompletedPayload:
-      type: object
-      required:
-        - executionId
-        - ruleId
-        - status
-        - finishedAt
-      properties:
-        executionId:
-          type: string
-          format: uuid
-        ruleId:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [SUCCESS, ERROR]
-        finishedAt:
           type: string
           format: date-time
