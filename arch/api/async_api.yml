@@ -1,0 +1,186 @@
+asyncapi: 2.6.0
+info:
+  title: Smart Home Device Events API
+  version: 1.0.0
+  description: |
+    Черновик AsyncAPI для MVP-экосистемы умного дома.
+    Используется для асинхронной передачи телеметрии и событий от Device Gateway
+    в Telemetry и другие подписанные сервисы.
+
+defaultContentType: application/json
+
+servers:
+  broker:
+    url: broker.smart-home.local:9092
+    protocol: kafka
+    description: MVP message broker
+
+channels:
+  devices.telemetry.received:
+    description: Канал публикации телеметрии устройств
+    publish:
+      summary: Device Gateway публикует телеметрию устройства
+      operationId: publishTelemetry
+      message:
+        $ref: '#/components/messages/TelemetryReceived'
+
+  devices.events.received:
+    description: Канал публикации событий устройства
+    publish:
+      summary: Device Gateway публикует событийные сообщения устройства
+      operationId: publishDeviceEvent
+      message:
+        $ref: '#/components/messages/DeviceEventReceived'
+
+  rules.execution.completed:
+    description: Канал публикации результата выполнения сценария
+    publish:
+      summary: Rules Engine публикует результат выполнения сценария
+      operationId: publishRuleExecutionCompleted
+      message:
+        $ref: '#/components/messages/RuleExecutionCompleted'
+
+components:
+  messages:
+    TelemetryReceived:
+      name: TelemetryReceived
+      title: Telemetry received
+      summary: Сообщение с телеметрией устройства
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TelemetryReceivedPayload'
+      examples:
+        - name: temperature
+          summary: Температура отопительного модуля
+          payload:
+            eventId: "evt-001"
+            deviceId: "dev-heat-001"
+            houseId: "house-001"
+            type: "telemetry"
+            metricName: "temperature"
+            metricValue: "21.7"
+            recordedAt: "2026-03-09T18:12:00Z"
+
+    DeviceEventReceived:
+      name: DeviceEventReceived
+      title: Device event received
+      summary: Сообщение о событии устройства
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeviceEventReceivedPayload'
+      examples:
+        - name: gateOpened
+          summary: Событие открытия ворот
+          payload:
+            eventId: "evt-002"
+            deviceId: "dev-gate-001"
+            houseId: "house-001"
+            type: "device_event"
+            eventType: "gate_opened"
+            payload:
+              source: "remote_control"
+            createdAt: "2026-03-09T18:15:00Z"
+
+    RuleExecutionCompleted:
+      name: RuleExecutionCompleted
+      title: Rule execution completed
+      summary: Сообщение о результате выполнения сценария
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/RuleExecutionCompletedPayload'
+      examples:
+        - name: success
+          summary: Сценарий выполнен успешно
+          payload:
+            executionId: "exec-001"
+            ruleId: "rule-001"
+            status: "SUCCESS"
+            finishedAt: "2026-03-09T07:00:02Z"
+
+  schemas:
+    TelemetryReceivedPayload:
+      type: object
+      required:
+        - eventId
+        - deviceId
+        - houseId
+        - type
+        - metricName
+        - metricValue
+        - recordedAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [telemetry]
+        metricName:
+          type: string
+          example: temperature
+        metricValue:
+          type: string
+          example: "21.7"
+        recordedAt:
+          type: string
+          format: date-time
+
+    DeviceEventReceivedPayload:
+      type: object
+      required:
+        - eventId
+        - deviceId
+        - houseId
+        - type
+        - eventType
+        - payload
+        - createdAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [device_event]
+        eventType:
+          type: string
+          example: gate_opened
+        payload:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+
+    RuleExecutionCompletedPayload:
+      type: object
+      required:
+        - executionId
+        - ruleId
+        - status
+        - finishedAt
+      properties:
+        executionId:
+          type: string
+          format: uuid
+        ruleId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [SUCCESS, ERROR]
+        finishedAt:
+          type: string
+          format: date-time
