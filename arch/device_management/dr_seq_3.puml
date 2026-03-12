@@ -1,0 +1,34 @@
+@startuml
+title Device Registry — Сценарий 3: Отвязка (удаление) устройства из аккаунта
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Registry" as DR
+participant "Device Onboarding" as DO
+participant "Device Gateway" as DG
+
+User -> App: Удалить устройство
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+
+App -> GW: DELETE /devices/{device_id} + token
+GW -> IA: Проверить токен и права на device_id
+IA --> GW: OK
+
+GW -> DR: DeactivateDevice(device_id)\nstatus=Decommissioned
+DR --> GW: OK
+
+GW -> DO: Инвалидировать креды устройства\n(RevokeDeviceCredentials(device_id))
+DO -> IA: Отозвать device_token/сертификат
+IA --> DO: OK
+
+opt Устройство онлайн (мягкое отключение)
+  DO -> DG: Сообщить устройству о деактивации\n(device_id)
+  DG -> DG: Если есть активная сессия устройства — разорвать
+end
+
+GW --> App: 200 OK
+App --> User: Устройство удалено из аккаунта
+@enduml

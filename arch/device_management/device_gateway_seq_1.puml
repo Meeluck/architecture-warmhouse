@@ -1,0 +1,34 @@
+@startuml
+title Device Gateway — Сценарий 1: Доставка команды на устройство (отопление/свет/ворота)
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Registry" as DR
+participant "Device Gateway" as DG
+participant "Устройство" as Dev
+
+User -> App: Нажать "Вкл/Выкл" / "Открыть/Закрыть" / "Температура=22"
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+
+App -> GW: POST /devices/{id}/commands\n{action, params} + token
+GW -> IA: Проверить токен, получить user_id
+IA --> GW: OK (user_id)
+
+GW -> DR: Проверить доступ пользователя к device_id
+DR --> GW: OK (device_status, owner=user_id)
+
+GW -> DG: SendCommand(device_id, action, params, correlation_id)
+
+alt Устройство онлайн и есть активный канал
+  DG -> Dev: Отправить команду (протокол/канал)\n+ correlation_id
+  Dev --> DG: Ack/Result (success/fail) + correlation_id
+  DG --> GW: CommandResult(correlation_id, status, details)
+  GW --> App: 200 OK (status) Показать результат
+else Устройство оффлайн / канал недоступен
+  DG --> GW: CommandResult(correlation_id, timeout/offline)
+  GW --> App: (503/408 + причина)Показать "устройство недоступно"
+end
+@enduml

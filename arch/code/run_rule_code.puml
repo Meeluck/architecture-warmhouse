@@ -1,0 +1,157 @@
+@startuml
+title Rules Engine — диаграмма кода: исполнение сценария
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 80
+
+top to bottom direction
+
+package "Application Services" {
+  class ExecutionScheduler {
+    +planJobs(...)
+    +findSchedulableRules(...)
+    +createJob(...)
+  }
+
+  class ActionExecutor {
+    +execute(job)
+  }
+
+  class ExecutionLogService {
+    +writeSuccess(...)
+    +writeError(...)
+  }
+}
+
+package "Domain Model" {
+  class Rule {
+    +id: UUID
+    +name: string
+    +targetDeviceId: UUID
+    +status: RuleStatus
+    +currentVersion: int
+    +isActive(): bool
+  }
+
+  class RuleVersion {
+    +id: UUID
+    +ruleId: UUID
+    +version: int
+    +schedule: CronExpression
+    +definitionJson: string
+    +publishedAt: datetime
+    +isPublished: bool
+  }
+
+  class ExecutionJob {
+    +id: UUID
+    +ruleId: UUID
+    +ruleVersion: int
+    +plannedAt: datetime
+    +status: JobStatus
+    +retryCount: int
+    +markRunning()
+    +markSucceeded()
+    +markFailed(reason: string)
+    +canRetry(): bool
+  }
+
+  class ExecutionLogEntry {
+    +id: UUID
+    +ruleId: UUID
+    +jobId: UUID
+    +startedAt: datetime
+    +finishedAt: datetime
+    +status: ExecutionStatus
+    +errorMessage: string
+  }
+
+  class CronExpression
+}
+
+package "Ports & Repositories" {
+  interface RuleRepository {
+    +findActive()
+    +findById(...)
+  }
+
+  interface RuleVersionRepository {
+    +findPublished(...)
+    +findByRuleAndVersion(...)
+  }
+
+  interface ExecutionJobRepository {
+    +save(...)
+    +findPlannedBefore(...)
+    +update(...)
+  }
+
+  interface ExecutionLogRepository {
+    +save(...)
+    +findByRule(...)
+  }
+
+  interface DeviceCommandPort {
+    +sendCommand(...)
+  }
+}
+
+enum RuleStatus {
+  Active
+  Disabled
+}
+
+enum JobStatus {
+  Planned
+  Running
+  Succeeded
+  Failed
+}
+
+enum ExecutionStatus {
+  Success
+  Error
+}
+
+Rule o-- RuleVersion
+Rule o-- ExecutionJob
+RuleVersion --> CronExpression
+ExecutionJob --> ExecutionLogEntry
+
+ExecutionScheduler ..> RuleRepository
+ExecutionScheduler ..> RuleVersionRepository
+ExecutionScheduler ..> ExecutionJobRepository
+ExecutionScheduler ..> Rule
+ExecutionScheduler ..> RuleVersion
+ExecutionScheduler ..> ExecutionJob
+
+ActionExecutor ..> ExecutionJobRepository
+ActionExecutor ..> RuleVersionRepository
+ActionExecutor ..> DeviceCommandPort
+ActionExecutor ..> ExecutionJob
+ActionExecutor ..> RuleVersion
+
+ExecutionLogService ..> ExecutionLogRepository
+ExecutionLogService ..> ExecutionLogEntry
+
+ActionExecutor ..> ExecutionLogService
+
+note right of ExecutionScheduler
+Выбирает активные правила,
+сопоставляет расписание
+и создаёт задания на запуск
+end note
+
+note right of ActionExecutor
+Исполняет действие сценария
+по конкретной версии правила
+end note
+
+note right of ExecutionLogService
+Сохраняет результат выполнения:
+успех или ошибка
+end note
+
+@enduml

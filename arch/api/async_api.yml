@@ -1,0 +1,176 @@
+asyncapi: 3.0.0
+info:
+  title: Smart Home Device Events API
+  version: 1.0.0
+  description: >
+    Черновик AsyncAPI для MVP-экосистемы умного дома.
+    Описывает асинхронную передачу телеметрии, событий устройств
+    и результатов выполнения сценариев.
+
+defaultContentType: application/json
+
+servers:
+  broker:
+    host: broker.smart-home.local:9092
+    protocol: kafka
+    description: MVP message broker
+
+channels:
+  deviceTelemetryReceived:
+    address: devices.telemetry.received
+    messages:
+      telemetryReceived:
+        $ref: '#/components/messages/TelemetryReceived'
+
+  deviceEventsReceived:
+    address: devices.events.received
+    messages:
+      deviceEventReceived:
+        $ref: '#/components/messages/DeviceEventReceived'
+
+operations:
+  publishDeviceTelemetry:
+    action: send
+    title: Публикация телеметрии устройства
+    summary: Device Gateway публикует телеметрию устройства в брокер
+    channel:
+      $ref: '#/channels/deviceTelemetryReceived'
+    messages:
+      - $ref: '#/channels/deviceTelemetryReceived/messages/telemetryReceived'
+
+  receiveDeviceTelemetry:
+    action: receive
+    title: Приём телеметрии устройства
+    summary: Telemetry service получает телеметрию устройства из брокера
+    channel:
+      $ref: '#/channels/deviceTelemetryReceived'
+    messages:
+      - $ref: '#/channels/deviceTelemetryReceived/messages/telemetryReceived'
+
+  publishDeviceEvent:
+    action: send
+    title: Публикация события устройства
+    summary: Device Gateway публикует событие устройства в брокер
+    channel:
+      $ref: '#/channels/deviceEventsReceived'
+    messages:
+      - $ref: '#/channels/deviceEventsReceived/messages/deviceEventReceived'
+
+  receiveDeviceEvent:
+    action: receive
+    title: Приём события устройства
+    summary: Telemetry service получает событие устройства из брокера
+    channel:
+      $ref: '#/channels/deviceEventsReceived'
+    messages:
+      - $ref: '#/channels/deviceEventsReceived/messages/deviceEventReceived'
+
+components:
+  messages:
+    TelemetryReceived:
+      name: TelemetryReceived
+      title: Telemetry received
+      summary: Сообщение с телеметрией устройства
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TelemetryReceivedPayload'
+      examples:
+        - name: temperature
+          summary: Температура отопительного модуля
+          payload:
+            eventId: "9c4d3cf3-9fb1-4f7e-a5f9-ef6c7b8d0001"
+            deviceId: "2d4be9b5-2261-4fc2-8da7-f6d6d9e10001"
+            houseId: "0d8a3be3-32e1-4c2f-9f9a-7a9f8f310001"
+            type: "telemetry"
+            metricName: "temperature"
+            metricValue: "21.7"
+            recordedAt: "2026-03-09T18:12:00Z"
+
+    DeviceEventReceived:
+      name: DeviceEventReceived
+      title: Device event received
+      summary: Сообщение о событии устройства
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeviceEventReceivedPayload'
+      examples:
+        - name: gateOpened
+          summary: Событие открытия ворот
+          payload:
+            eventId: "9c4d3cf3-9fb1-4f7e-a5f9-ef6c7b8d0002"
+            deviceId: "2d4be9b5-2261-4fc2-8da7-f6d6d9e10002"
+            houseId: "0d8a3be3-32e1-4c2f-9f9a-7a9f8f310001"
+            type: "device_event"
+            eventType: "gate_opened"
+            payload:
+              source: "remote_control"
+            createdAt: "2026-03-09T18:15:00Z"
+
+
+
+  schemas:
+    TelemetryReceivedPayload:
+      type: object
+      required:
+        - eventId
+        - deviceId
+        - houseId
+        - type
+        - metricName
+        - metricValue
+        - recordedAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [telemetry]
+        metricName:
+          type: string
+          example: temperature
+        metricValue:
+          type: string
+          example: "21.7"
+        recordedAt:
+          type: string
+          format: date-time
+
+    DeviceEventReceivedPayload:
+      type: object
+      required:
+        - eventId
+        - deviceId
+        - houseId
+        - type
+        - eventType
+        - payload
+        - createdAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [device_event]
+        eventType:
+          type: string
+          example: gate_opened
+        payload:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time

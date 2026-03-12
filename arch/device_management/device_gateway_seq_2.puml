@@ -1,0 +1,29 @@
+@startuml
+title Device Gateway — Сценарий 2: Приём телеметрии/событий от устройства (температура/камера/состояния)
+
+participant "Устройство" as Dev
+participant "Device Gateway" as GW
+participant "Device Registry" as DR
+participant "Telemetry" as TLM
+participant "Notifications" as NTF
+participant "Rules Engine" as RULES
+
+Dev -> GW: Отправить событие/измерение\n(device_id, type, payload, ts)
+GW -> GW: Проверить аутентификацию устройства
+GW -> DR: Обновить last_seen / статус Online
+DR --> GW: OK
+
+GW -> GW: Нормализовать формат события\n(единая модель)
+GW -> TLM: Ingest(event)
+TLM --> GW: OK
+
+opt Событие требует уведомления (например, движение/открытие ворот)
+  TLM -> NTF: PublishNotification(event)
+  NTF -> NTF: Дедупликация / ретраи / доставка
+end
+
+opt Событие триггерит сценарий
+  TLM -> RULES: PublishTrigger(event)
+  RULES -> RULES: Оценить условия и запланировать действия
+end
+@enduml

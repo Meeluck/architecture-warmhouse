@@ -1,0 +1,48 @@
+@startuml
+title Device Onboarding — Сценарий 6: Factory reset и перепривязка (MVP)
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Onboarding" as DO
+participant "Device Gateway" as DG
+participant "Device Registry" as DR
+participant "Устройство" as Dev
+
+== Сброс устройства ==
+User -> Dev: Выполнить factory reset (кнопка/меню)
+Dev -> Dev: Стереть device_token/сертификаты\nвернуться в заводской режим
+
+== Привязка заново ==
+User -> App: Добавить устройство (снова)
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+App -> User: Сканировать QR / ввести новый код привязки
+
+Dev -> DG: Подключиться в режиме привязки\n(device_id, factory_secret)
+DG -> DO: Устройство онлайн и готово к привязке\n(device_id)
+DO -> DR: Upsert(device_id)\nstatus=Ожидает привязки
+DR --> DO: OK
+
+App -> GW: POST /onboarding/claim\n{pairing_code} + token
+GW -> IA: Проверить токен
+IA --> GW: OK
+
+GW -> DO: Claim(user_id, pairing_code)
+DO -> DR: Bind(device_id, user_id, home_id=default)\nstatus=Привязано
+DR --> DO: OK
+
+DO -> IA: Выпустить новые креды устройства\n(device_id)
+IA --> DO: new_token/new_cert
+DO -> DG: Доставить креды устройству
+DG -> Dev: Передать креды
+
+Dev -> DG: Переподключиться с новыми кредами
+DG -> DR: UpdatePresence(device_id, Online)
+DR --> DG: OK
+
+DO --> GW: OK
+GW --> App: 200 OK
+App --> User: Перепривязка завершена
+@enduml

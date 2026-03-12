@@ -1,0 +1,58 @@
+@startuml
+title Device Onboarding — Сценарий 2 (MVP): Добавление устройства с первичной настройкой Wi-Fi (локальный этап)
+
+actor "Пользователь" as User
+
+participant "WebApp/MobApp" as App
+participant "Локальный канал (BLE / AP устройства)" as Local
+participant "Устройство" as Dev
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Onboarding" as DO
+participant "Device Gateway" as DG
+participant "Device Registry" as DR
+
+== Старт ==
+User -> App: Добавить устройство
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+App -> User: Сканировать QR / ввести код привязки
+
+== Локальная настройка сети ==
+App -> Local: Подключиться к устройству\n(BLE или Wi-Fi AP)
+Local -> Dev: Установить локальный канал
+App -> Dev: Передать Wi-Fi параметры\n(SSID, пароль, регион)
+Dev -> Dev: Подключиться к домашней сети
+Dev -> App: Сообщить "Интернет OK"\n(или ошибка)
+
+alt Интернет не настроен
+  App -> User: Показать ошибку Wi-Fi\nи предложить повторить
+else Интернет настроен успешно
+  == Дальше — стандартный claim ==
+  Dev -> DG: Подключиться (TLS) и запросить режим привязки\n(device_id)
+  DG -> DO: Устройство онлайн и готово к привязке\n(device_id)
+  DO -> DR: Upsert(device_id)\nstatus=Ожидает привязки
+  DR --> DO: OK
+
+  App -> GW: POST /onboarding/claim\n{pairing_code} + token
+  GW -> IA: Проверить токен, получить user_id
+  IA --> GW: OK (user_id)
+
+  GW -> DO: Claim(user_id, pairing_code)
+  DO -> DR: Bind(device_id, user_id, home_id=default)\nstatus=Привязано
+  DR --> DO: OK
+
+  DO -> IA: Выпустить креды устройства\n(device_id)
+  IA --> DO: device_token/сертификат
+  DO -> DG: Доставить креды устройству
+  DG -> Dev: Передать креды
+
+  Dev -> DG: Переподключиться с новыми кредами
+  DG -> DR: UpdatePresence(device_id, Online, last_seen=now)
+  DR --> DG: OK
+
+  DO --> GW: OK (device_id, status=Online)
+  GW --> App: 200 OK
+  App --> User: Устройство добавлено
+end
+@enduml

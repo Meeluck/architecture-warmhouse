@@ -1,0 +1,29 @@
+@startuml
+title Device Registry — Сценарий 2: Изменение метаданных устройства
+
+actor "Пользователь" as User
+participant "WebApp/MobApp" as App
+participant "API Gateway" as GW
+participant "Identity & Access" as IA
+participant "Device Registry" as DR
+
+User -> App: Переименовать устройство / изменить теги
+App -> IA: Проверить сессию / получить токен
+IA --> App: Access token
+
+App -> GW: PATCH /devices/{device_id}\n{name, tags} + token
+GW -> IA: Проверить токен и права на device_id
+IA --> GW: OK
+
+GW -> DR: UpdateMetadata(device_id, name, tags)
+alt Устройство найдено и доступ есть
+  DR -> DR: Сохранить изменения
+  DR --> GW: OK (обновлённая карточка устройства)
+  GW --> App: 200 OK
+  App --> User: Показать обновлённые данные
+else Нет доступа или device_id не найден
+  DR --> GW: Error (not_found / forbidden)
+  GW --> App: 404/403
+  App --> User: Показать ошибку
+end
+@enduml

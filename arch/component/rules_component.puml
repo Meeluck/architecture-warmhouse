@@ -1,0 +1,42 @@
+
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title  Rules Engine — диаграмма компонентов
+
+Container_Ext(gw, API GateWay)
+Container_Ext(dr,Device Registry,Управление устройствами дома)
+Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
+
+ContainerDb(re_db, Rules Engine DB,"Хранит определения правил, их версии, состояния и историю выполнения")
+
+Container_Boundary(re, Rules Engine){    
+    Component(api,Rules API,,"Принимает запросы на создание, изменение, получение, удаление и тестирование сценариев")
+    Component(designer,Rule Disigner,,"Отвечает за описание сценария: триггеры, условия, действия, а также за сохранение структуры правила в системе")   
+    Component(validator,Rule Validator,,"Проверяет корректность сценария: допустимость триггеров, совместимость условий и действий, валидность конфигурации правила")
+    Component(version, Version Manager,,"Управляет версиями сценариев: хранит опубликованную и черновую версии, позволяет обновлять правило без потери истории изменений")
+    Component(executor,Action Executor,,"Запускает действия сценария: формирует команды для устройств, вызывает внешние сервисы или инициирует уведомления")
+    Component(scheduler, Execution Scheduler,,"Управляется отложенными и повторными действиями, а также отвечает за ретраи и планирование исполнения")
+    Component(log, Execution Log,,"Хранит историю выполнения сценариев: когда правило сработало, что было выполнено, успешно ли завершилось исполнение, были ли ошибки")
+}
+
+Rel(gw,api, "создание / изменение / получение сценариев")
+Rel(api,validator,"проверить правило")
+Rel(api,designer,"создать / изменить правило")
+Rel(api,version,"сохранить версию")
+Rel(api,log,"получить историю выполнения")
+
+Rel(dr,designer,"список устройств, типы, атрибуты")
+Rel(dr,validator,"проверка допустимости действий и целей")
+
+Rel(executor,dg,"отправить команду на устройство")
+
+Rel_Left(executor,scheduler,"запланировать отложенное / повторное выполнение")
+Rel_Right(scheduler,executor,"повторный запуск действия")
+
+Rel(executor,log,"записать результат выполнения")
+Rel(log,re_db,"хранение истории выполнения")
+Rel(designer,re_db,"хранение правил и их версий")
+Rel(version,re_db,"хранение версий правил")
+
+@enduml

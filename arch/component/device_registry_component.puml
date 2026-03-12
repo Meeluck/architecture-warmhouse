@@ -1,0 +1,42 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Device Registry — диаграмма компонентов
+
+Container_Ext(gw, API GateWay)
+Container_Ext(tm,Telemetry,Приём и хранение телеметрии и событий от устройств)
+Container_Ext(re, Rules Engine,Управление сценариями и их выполнение)
+Container_Ext(do,Device Onboarding,Подключение устройства)
+Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
+
+ContainerDb(db_dm_dr, Device Registry DB,"Хранит информацию о зарегистрированных устройствах, их метаданные, связи с владельцем/домом и данные о доступности")
+
+Container_Boundary(dr, Device Registry){    
+    Component(api,"Device Registry API", ,"Обрабатывает запросы UI на работу с устройствами")
+    Component(catalog, "Device Catalog", ,"Хранит информацию о типах устройств, их характеристиках и поддерживаемых командах")
+    Component(owner, "Device Ownership Manager", ,"Управляет связью между устройствами и пользователями, обеспечивает контроль доступа к устройствам")
+    Component(state, "Device State Manager", ,"Хранит актуальное состояние устройств, обновляет его на основе телеметрии и событий от устройств")
+    Component(query, "Device Query Service",,"Предоставляет данные для UI и других сервисов в удобном виде")
+}
+
+Rel(gw,api,"Запросы UI на работу с устройствами")
+Rel(api,query,"Получение данных о устройствах для UI")
+Rel(api,catalog,"Изменение метаданных устройств")
+Rel(api,owner,"Проверить принадлежность и привязку устройства")
+
+Rel(do,catalog,"Создать запись устройства в каталоге")
+Rel(do,owner,"Привязать устройство к пользователю/дому")
+
+Rel(dg,state,"Обновление состояния устройства")
+
+Rel(tm,query,"Получение данных о устройстве")
+Rel(re,query,"Получение списка устройств и их атрибутов")
+
+
+Rel(catalog,db_dm_dr,"Хранение метаданных устройств")
+Rel(owner,db_dm_dr,"Хранение информации о владельцах устройств")
+Rel(state,db_dm_dr,"Хранение информации о состоянии устройств")
+Rel(query,db_dm_dr,"Получение данных о устройствах")
+
+
+@enduml

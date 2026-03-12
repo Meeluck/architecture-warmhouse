@@ -1,0 +1,16 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user,Пользователь)
+Person(stuff,Техник, "Монтаж и настройка контроллера")
+
+System_Boundary(c1,WarmHouse){
+    System(wh, "WarmHouse","Система управления отоплением")
+}
+
+System_Ext(heating,"Heating Controller","Контроллер управления отоплением")
+
+Rel(wh,heating,"Отправка команд к контроллеру для управления отоплением")
+Rel(user,wh,"Управление отоплением")
+Rel_Left(stuff,wh,"Подключение нового контроллера к системе")
+@enduml

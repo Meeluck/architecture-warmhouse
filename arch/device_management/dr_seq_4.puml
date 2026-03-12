@@ -1,0 +1,22 @@
+@startuml
+title Device Registry — Сценарий 4: Обновление доступности устройства (online/offline/last_seen)
+
+participant "Устройство" as Dev
+participant "Device Gateway" as GW
+participant "Device Registry" as DR
+
+== Устройство подключилось ==
+Dev -> GW: Подключиться (аутентификация)
+GW -> DR: UpdatePresence(device_id,\nstatus=Online, last_seen=now)
+DR --> GW: OK
+
+== Heartbeat / активность ==
+Dev -> GW: Heartbeat / событие
+GW -> DR: UpdateLastSeen(device_id, now)
+DR --> GW: OK
+
+== Устройство отключилось ==
+Dev -> GW: Disconnect (или timeout)
+GW -> DR: UpdatePresence(device_id,\nstatus=Offline, last_seen=now)
+DR --> GW: OK
+@enduml

@@ -1,0 +1,585 @@
+openapi: 3.0.3
+info:
+  title: Smart Home Ecosystem API
+  version: 1.0.0
+  description: |
+    Черновик OpenAPI для MVP-экосистемы умного дома.
+    Включает основные синхронные сценарии:
+    - onboarding устройства
+    - создание и просмотр сценариев
+    - получение телеметрии
+
+servers:
+  - url: https://api.smart-home.local
+    description: MVP environment
+
+tags:
+  - name: Device Onboarding
+    description: Подключение и перепривязка устройств
+  - name: Rules Engine
+    description: Управление сценариями и просмотр истории выполнения
+  - name: Telemetry
+    description: Получение текущих значений и истории телеметрии
+
+paths:
+  /onboarding/claims:
+    post:
+      tags: [Device Onboarding]
+      summary: Привязать устройство по pairing code
+      operationId: createDeviceClaim
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimRequest'
+            examples:
+              default:
+                summary: Пример запроса на привязку
+                value:
+                  pairingCode: "ABC-123-XYZ"
+      responses:
+        '200':
+          description: Устройство успешно привязано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateClaimResponse'
+              examples:
+                success:
+                  value:
+                    deviceId: "dev-001"
+                    houseId: "house-001"
+                    status: "CLAIMED"
+                    claimedAt: "2026-03-09T18:00:00Z"
+        '400':
+          description: Неверный или просроченный код привязки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCode:
+                  value:
+                    code: "INVALID_PAIRING_CODE"
+                    message: "Pairing code is invalid or expired."
+        '409':
+          description: Устройство уже привязано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyClaimed:
+                  value:
+                    code: "DEVICE_ALREADY_CLAIMED"
+                    message: "Device is already claimed by another user."
+        '422':
+          description: Устройство не готово к привязке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notReady:
+                  value:
+                    code: "DEVICE_NOT_READY"
+                    message: "Device is not online or not in onboarding mode."
+
+  /onboarding/devices/{deviceId}:
+    get:
+      tags: [Device Onboarding]
+      summary: Получить статус onboarding устройства
+      operationId: getOnboardingStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Текущий статус подключения устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingStatusResponse'
+              examples:
+                pending:
+                  value:
+                    deviceId: "dev-001"
+                    status: "PENDING_CLAIM"
+                    lastUpdatedAt: "2026-03-09T18:00:00Z"
+        '404':
+          description: Устройство или onboarding-запись не найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /onboarding/devices/{deviceId}/reset:
+    post:
+      tags: [Device Onboarding]
+      summary: Инициировать перепривязку или сброс устройства
+      operationId: resetDeviceOnboarding
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetDeviceRequest'
+            examples:
+              factoryReset:
+                value:
+                  reason: "factory_reset"
+      responses:
+        '202':
+          description: Запрос на сброс принят в обработку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetDeviceResponse'
+              examples:
+                accepted:
+                  value:
+                    deviceId: "dev-001"
+                    status: "RESET_REQUESTED"
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /rules:
+    post:
+      tags: [Rules Engine]
+      summary: Создать сценарий
+      operationId: createRule
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRuleRequest'
+            examples:
+              heatingMorning:
+                value:
+                  name: "Включить отопление утром"
+                  houseId: "house-001"
+                  schedule: "0 7 * * *"
+                  actions:
+                    - deviceId: "dev-heat-001"
+                      actionType: "DEVICE_COMMAND"
+                      commandName: "set_temperature"
+                      params:
+                        value: 22
+      responses:
+        '201':
+          description: Сценарий создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleResponse'
+              examples:
+                created:
+                  value:
+                    ruleId: "rule-001"
+                    name: "Включить отопление утром"
+                    houseId: "house-001"
+                    status: "ACTIVE"
+                    currentVersion: 1
+                    schedule: "0 7 * * *"
+        '400':
+          description: Ошибка валидации сценария
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Недопустимое действие для устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [Rules Engine]
+      summary: Получить список сценариев дома
+      operationId: listRules
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: houseId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Идентификатор дома
+      responses:
+        '200':
+          description: Список сценариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RuleResponse'
+              examples:
+                default:
+                  value:
+                    - ruleId: "rule-001"
+                      name: "Включить отопление утром"
+                      houseId: "house-001"
+                      status: "ACTIVE"
+                      currentVersion: 1
+                      schedule: "0 7 * * *"
+
+  /rules/{ruleId}/executions:
+    get:
+      tags: [Rules Engine]
+      summary: Получить историю выполнения сценария
+      operationId: listRuleExecutions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RuleId'
+      responses:
+        '200':
+          description: История выполнения сценария
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RuleExecutionResponse'
+              examples:
+                executions:
+                  value:
+                    - executionId: "exec-001"
+                      ruleId: "rule-001"
+                      plannedAt: "2026-03-09T07:00:00Z"
+                      startedAt: "2026-03-09T07:00:01Z"
+                      finishedAt: "2026-03-09T07:00:02Z"
+                      status: "SUCCESS"
+                      errorMessage: null
+        '404':
+          description: Сценарий не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /devices/{deviceId}/telemetry/latest:
+    get:
+      tags: [Telemetry]
+      summary: Получить последние значения телеметрии устройства
+      operationId: getLatestTelemetry
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: Последние значения телеметрии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LatestTelemetryResponse'
+              examples:
+                temperature:
+                  value:
+                    deviceId: "dev-heat-001"
+                    metrics:
+                      - name: "temperature"
+                        value: "21.7"
+                        recordedAt: "2026-03-09T18:12:00Z"
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /devices/{deviceId}/telemetry:
+    get:
+      tags: [Telemetry]
+      summary: Получить историю телеметрии устройства
+      operationId: getTelemetryHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+        - name: metric
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Имя метрики
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: История телеметрии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryHistoryResponse'
+              examples:
+                history:
+                  value:
+                    deviceId: "dev-heat-001"
+                    metric: "temperature"
+                    points:
+                      - value: "20.4"
+                        recordedAt: "2026-03-09T08:00:00Z"
+                      - value: "21.7"
+                        recordedAt: "2026-03-09T18:12:00Z"
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Идентификатор устройства
+
+    RuleId:
+      name: ruleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Идентификатор сценария
+
+  schemas:
+    CreateClaimRequest:
+      type: object
+      required: [pairingCode]
+      properties:
+        pairingCode:
+          type: string
+          example: "ABC-123-XYZ"
+
+    CreateClaimResponse:
+      type: object
+      required: [deviceId, houseId, status, claimedAt]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        houseId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [CLAIMED]
+        claimedAt:
+          type: string
+          format: date-time
+
+    OnboardingStatusResponse:
+      type: object
+      required: [deviceId, status, lastUpdatedAt]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PENDING_DEVICE_ONLINE
+            - PENDING_CLAIM
+            - CLAIMED
+            - RESET_REQUESTED
+            - FAILED
+        lastUpdatedAt:
+          type: string
+          format: date-time
+
+    ResetDeviceRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [factory_reset, ownership_transfer, user_request]
+
+    ResetDeviceResponse:
+      type: object
+      required: [deviceId, status]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [RESET_REQUESTED]
+
+    CreateRuleRequest:
+      type: object
+      required: [name, houseId, schedule, actions]
+      properties:
+        name:
+          type: string
+        houseId:
+          type: string
+          format: uuid
+        schedule:
+          type: string
+          description: Cron-выражение
+          example: "0 7 * * *"
+        actions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RuleActionRequest'
+
+    RuleActionRequest:
+      type: object
+      required: [deviceId, actionType, commandName]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        actionType:
+          type: string
+          enum: [DEVICE_COMMAND, NOTIFICATION]
+        commandName:
+          type: string
+          example: "set_temperature"
+        params:
+          type: object
+          additionalProperties: true
+
+    RuleResponse:
+      type: object
+      required: [ruleId, name, houseId, status, currentVersion, schedule]
+      properties:
+        ruleId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        houseId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ACTIVE, DISABLED]
+        currentVersion:
+          type: integer
+        schedule:
+          type: string
+
+    RuleExecutionResponse:
+      type: object
+      required:
+        [executionId, ruleId, plannedAt, startedAt, finishedAt, status]
+      properties:
+        executionId:
+          type: string
+          format: uuid
+        ruleId:
+          type: string
+          format: uuid
+        plannedAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [SUCCESS, ERROR]
+        errorMessage:
+          type: string
+          nullable: true
+
+    LatestTelemetryResponse:
+      type: object
+      required: [deviceId, metrics]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryPoint'
+
+    TelemetryHistoryResponse:
+      type: object
+      required: [deviceId, metric, points]
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+        metric:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryPoint'
+
+    TelemetryPoint:
+      type: object
+      required: [value, recordedAt]
+      properties:
+        value:
+          type: string
+          example: "21.7"
+        recordedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

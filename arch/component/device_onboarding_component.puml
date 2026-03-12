@@ -1,0 +1,41 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Device Onboarding — диаграмма компонентов
+
+Container_Ext(gw, API GateWay)
+Container_Ext(ia,Identity & Access,Управление пользователями и доступами)
+Container_Ext(dr,Device Registry,Управление устройствами дома)
+Container_Ext(dg,Device GateWay,Интеграционный слой управления устройствами)
+
+ContainerDb(db_dm_do, Device Onboarding DB,"Хранит временные данные onboarding-процесса: pairing code, статус привязки, промежуточное состояние и историю операций подключения.")
+
+Container_Boundary(do, Device Onboarding){    
+    Component(api,Onboarding API,"","Принимает запросы на добавление устройства, привязку к пользователю, перенос владения и повторное подключение после сброса")    
+    Component(pairing, Paring Manager,,"Отвечает за подтверждение владения устройством: проверяет код привязки, состояние устройства и возможность его привязки к текущему пользователю")
+    Component(provisioning,Provisioning Manager,,"Выпускает для устройства учётные данные доступа к платформе (токен, ключ или сертификат) и управляет их первичной выдачей при подключении")
+    Component(ownership, Ownership Manager,,"Обрабатывает перенос устройства между владельцами и перепривязку устройства после сброса к заводским настройкам.")
+    Component(state, State Manager,,"Хранит текущее состояние процесса подключения устройства: ожидает подключения, ожидает привязки, привязано, ошибка")
+}
+
+Rel(gw,api,"HTTP запросы на подключение, привязку, перенос, сброс")
+
+Rel(api,pairing,"проверка pairing code и подтверждение владения")
+Rel(api,ownership,"запрос на перенос или перепривязку устройства")
+Rel(api,state,"получить / обновить состояние onboarding")
+
+Rel(dg,state,"устройство вышло в сеть и готово к привязке")
+Rel(dg,pairing,"подтверждение, что устройство доступно")
+
+Rel(pairing,db_dm_do,"чтение pairing code, статуса и истории")
+Rel(state,db_dm_do,"хранение состояния onboarding")
+Rel(ownership,db_dm_do,"хранение операций переноса и сброса")
+
+Rel(pairing,provisioning,"запрос на выпуск учётных данных устройства")
+Rel(provisioning,ia,"выпуск / отзыв токена, ключа или сертификата")
+Rel(ia,provisioning,"credentials / статус отзыва")
+
+Rel(pairing,dr,"создать или обновить запись устройства")
+Rel(ownership,dr,"изменить владельца или статус привязки устройства")
+
+@enduml

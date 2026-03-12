@@ -1,0 +1,13 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person(user,"Customer","Пользователь")
+
+System(wh, "WarmHouse","Управление умным домом")
+
+System_Ext(devices,"Smart Devices","Устройства умного дома")
+
+Rel(wh,devices,"")
+Rel(user,wh,"Управление умным домом посредством нашей системы")
+
+@enduml

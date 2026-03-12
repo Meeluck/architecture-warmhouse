@@ -1,0 +1,52 @@
+@startuml
+title Rules Engine — создание и публикация сценария
+
+actor "Пользователь" as User
+participant "API Gateway" as APIGW
+participant "Rules API" as API
+participant "Rule Designer Service" as Designer
+participant "Rule Validator" as Validator
+participant "Version Manager" as Versioning
+participant "Rule Manager" as RuleMgr
+database "RuleDraftRepository" as DraftRepo
+database "RuleVersionRepository" as VersionRepo
+database "RuleRepository" as RuleRepo
+participant "Device Registry" as DR
+
+== Создание черновика ==
+User -> APIGW: Создать / изменить сценарий
+APIGW -> API: POST /rules
+API -> Designer: createDraft(cmd)\nили updateDraft(cmd)
+Designer -> DraftRepo: save(draft)
+DraftRepo --> Designer: RuleDraft
+Designer --> API: RuleDraft
+API --> APIGW: draft_id
+APIGW --> User: Черновик сохранён
+
+== Публикация сценария ==
+User -> APIGW: Опубликовать сценарий
+APIGW -> API: POST /rules/{draft_id}/publish
+
+API -> Versioning: publishDraft(draft_id)
+Versioning -> DraftRepo: findById(draft_id)
+DraftRepo --> Versioning: RuleDraft
+
+Versioning -> Validator: validateDraft(draft)
+Validator -> DR: проверить устройство,\nдопустимость действия и цели
+DR --> Validator: OK
+
+Validator --> Versioning: ValidationResult(OK)
+
+Versioning -> VersionRepo: save(RuleVersion)\nstatus=Published
+VersionRepo --> Versioning: RuleVersion
+
+Versioning -> RuleMgr: registerRule(version)
+RuleMgr -> RuleRepo: save(Rule)\nstatus=Active,\ncurrentVersion=version
+RuleRepo --> RuleMgr: Rule
+
+RuleMgr --> Versioning: Rule(active)
+Versioning --> API: RuleVersion + Rule
+API --> APIGW: 200 OK
+APIGW --> User: Сценарий опубликован и активирован
+
+@enduml
