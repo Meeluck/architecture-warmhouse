@@ -9,7 +9,7 @@ import (
 
 func main() {
 	http.HandleFunc("/temperature", api.TemperatureHandler)
-	addr := ":8080"
+	addr := ":8081"
 	log.Printf("temperature-api started on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

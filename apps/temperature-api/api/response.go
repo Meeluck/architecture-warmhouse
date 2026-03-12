@@ -9,11 +9,11 @@ import (
 )
 
 type TemperatureResponse struct {
-	Location    string  `json:"location"`
-	SensorId    string  `json:"sensorId"`
-	Temperature float64 `json:"temperature"`
-	Unit        string  `json:"unit"`
-	Timestamp   string  `json:"timestamp"`
+	Location  string  `json:"location"`
+	SensorId  string  `json:"sensorId"`
+	Value     float64 `json:"value"`
+	Unit      string  `json:"unit"`
+	Timestamp string  `json:"timestamp"`
 }
 
 func TemperatureHandler(w http.ResponseWriter, r *http.Request) {
@@ -47,11 +47,11 @@ func TemperatureHandler(w http.ResponseWriter, r *http.Request) {
 	temperature := randomTemperature(location)
 
 	resp := TemperatureResponse{
-		Location:    location,
-		SensorId:    sensorId,
-		Temperature: temperature,
-		Unit:        "C",
-		Timestamp:   time.Now().Format(time.RFC3339),
+		Location:  location,
+		SensorId:  sensorId,
+		Value:     temperature,
+		Unit:      "C",
+		Timestamp: time.Now().Format(time.RFC3339),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
